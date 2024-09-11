@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="C:\Users\proti\OneDrive\Escritorio\nuevaa\Pagina\index.css">
+    <title>Sistema de Login</title>
+</head>
+<body>
+    <div class="login-container active" id="loginContainer">
+        <h1>Iniciar Sesión</h1>
+
+        <form id="loginForm">
+            <label for="username">Usuario:</label>
+            <input type="text" id="username" placeholder="Introduce tu usuario" required>
+
+            <label for="password">Contraseña:</label>
+            <input type="password" id="password" placeholder="Introduce tu contraseña" required>
+
+            <button type="submit">Iniciar Sesión</button>
+        </form>
+
+        <div id="loginMessage" class="login-message"></div>
+        <div class="register-link" id="showRegister">¿No tienes cuenta? Regístrate aquí</div>
+    </div>
+
+    <div class="register-container" id="registerContainer">
+        <h1>Registro</h1>
+
+        <form id="registerForm">
+            <label for="newUsername">Usuario:</label>
+            <input type="text" id="newUsername" placeholder="Elige tu usuario" required>
+
+            <label for="newPassword">Contraseña:</label>
+            <input type="password" id="newPassword" placeholder="Elige tu contraseña" required>
+
+            <button type="submit">Registrarse</button>
+        </form>
+
+        <div id="registerMessage" class="register-message"></div>
+        <div class="login-link" id="showLogin">¿Ya tienes cuenta? Inicia sesión aquí</div>
+    </div>
+
+    <script>
+        // Simulación de base de datos de usuarios
+        const users = [
+            { username: 'admin', password: 'admin123' },
+            { username: 'user1', password: 'password1' },
+            { username: 'user2', password: 'password2' }
+        ];
+
+        // Referencias a los elementos del DOM
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const loginMessage = document.getElementById('loginMessage');
+        const registerMessage = document.getElementById('registerMessage');
+        const loginContainer = document.getElementById('loginContainer');
+        const registerContainer = document.getElementById('registerContainer');
+        const showRegister = document.getElementById('showRegister');
+        const showLogin = document.getElementById('showLogin');
+
+        // Función para manejar el login
+        function login(username, password) {
+            // Verificar si el usuario existe en la "base de datos"
+            const user = users.find(user => user.username === username && user.password === password);
+            
+            if (user) {
+                loginMessage.textContent = `Bienvenido, ${username}!`;
+                loginMessage.style.color = 'green';
+            } else {
+                loginMessage.textContent = 'Usuario o contraseña incorrectos';
+                loginMessage.style.color = 'red';
+            }
+        }
+
+        // Función para manejar el registro
+        function register(username, password) {
+            // Verificar si el usuario ya existe
+            const userExists = users.some(user => user.username === username);
+
+            if (userExists) {
+                registerMessage.textContent = 'El nombre de usuario ya existe';
+                registerMessage.style.color = 'red';
+            } else {
+                // Agregar el nuevo usuario a la "base de datos"
+                users.push({ username, password });
+                registerMessage.textContent = `Usuario ${username} registrado exitosamente!`;
+                registerMessage.style.color = 'green';
+            }
+        }
+
+        // Manejar el evento de submit del formulario de login
+        loginForm.onsubmit = function(event) {
+            event.preventDefault(); // Prevenir el envío del formulario
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            login(username, password);
+
+            // Limpiar los campos del formulario
+            loginForm.reset();
+        }
+
+        // Manejar el evento de submit del formulario de registro
+        registerForm.onsubmit = function(event) {
+            event.preventDefault(); // Prevenir el envío del formulario
+
+            const username = document.getElementById('newUsername').value;
+            const password = document.getElementById('newPassword').value;
+
+            register(username, password);
+
+            // Limpiar los campos del formulario
+            registerForm.reset();
+        }
+
+        // Mostrar el formulario de registro
+        showRegister.onclick = function() {
+            loginContainer.classList.remove('active');
+            registerContainer.classList.add('active');
+        }
+
+        // Mostrar el formulario de login
+        showLogin.onclick = function() {
+            registerContainer.classList.remove('active');
+            loginContainer.classList.add('active');
+        }
+    </script>
+</body>
+</html>
