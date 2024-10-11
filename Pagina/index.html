@@ -3,51 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="C:\Users\proti\OneDrive\Escritorio\nuevaa\Pagina\index.css">
     <title>Sistema de Login</title>
+    <link rel="stylesheet" href="./index.css">
 </head>
 <body>
+    <!-- Formulario de Login -->
     <div class="login-container active" id="loginContainer">
         <h1>Iniciar Sesión</h1>
-
+    
         <form id="loginForm">
             <label for="username">Usuario:</label>
-            <input type="text" id="username" placeholder="Introduce tu usuario" required>
-
+            <input type="text" id="username" name="username" placeholder="Introduce tu usuario" required autocomplete="username">
+    
             <label for="password">Contraseña:</label>
-            <input type="password" id="password" placeholder="Introduce tu contraseña" required>
-
+            <input type="password" id="password" name="password" placeholder="Introduce tu contraseña" required autocomplete="current-password">
+    
             <button type="submit">Iniciar Sesión</button>
         </form>
-
+    
         <div id="loginMessage" class="login-message"></div>
         <div class="register-link" id="showRegister">¿No tienes cuenta? Regístrate aquí</div>
     </div>
 
+    <!-- Formulario de Registro -->
     <div class="register-container" id="registerContainer">
         <h1>Registro</h1>
-
+    
         <form id="registerForm">
             <label for="newUsername">Usuario:</label>
-            <input type="text" id="newUsername" placeholder="Elige tu usuario" required>
-
+            <input type="text" id="newUsername" name="username" placeholder="Elige tu usuario" required autocomplete="new-username">
+    
             <label for="newPassword">Contraseña:</label>
-            <input type="password" id="newPassword" placeholder="Elige tu contraseña" required>
-
+            <input type="password" id="newPassword" name="password" placeholder="Elige tu contraseña" required autocomplete="new-password">
+    
             <button type="submit">Registrarse</button>
         </form>
-
+    
         <div id="registerMessage" class="register-message"></div>
         <div class="login-link" id="showLogin">¿Ya tienes cuenta? Inicia sesión aquí</div>
     </div>
 
+    <!-- Panel de Administración -->
+    <div class="admin-container" id="adminContainer">
+        <h1>Panel de Administración</h1>
+        <h2>Lista de Usuarios</h2>
+        <div class="button-container">
+            <button id="addUserBtn" class="add-user-btn">Agregar Usuario</button>
+        </div>
+        <table id="userTable">
+            <thead>
+                <tr>
+                    <th>Usuario</th>
+                    <th>Rol</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Los usuarios se mostrarán aquí dinámicamente -->
+            </tbody>
+        </table>    
+        <div id="adminMessage" class="admin-message"></div>
+    </div>
+
     <script>
-        // Simulación de base de datos de usuarios
-        const users = [
-            { username: 'admin', password: 'admin123' },
-            { username: 'user1', password: 'password1' },
-            { username: 'user2', password: 'password2' }
-        ];
+        let users = []; // Definir la lista de usuarios
 
         // Referencias a los elementos del DOM
         const loginForm = document.getElementById('loginForm');
@@ -56,75 +75,252 @@
         const registerMessage = document.getElementById('registerMessage');
         const loginContainer = document.getElementById('loginContainer');
         const registerContainer = document.getElementById('registerContainer');
+        const adminContainer = document.getElementById('adminContainer');
+        const adminMessage = document.getElementById('adminMessage');
+        const userTableBody = document.querySelector('#userTable tbody');
         const showRegister = document.getElementById('showRegister');
         const showLogin = document.getElementById('showLogin');
 
-        // Función para manejar el login
-        function login(username, password) {
-            // Verificar si el usuario existe en la "base de datos"
-            const user = users.find(user => user.username === username && user.password === password);
-            
-            if (user) {
-                loginMessage.textContent = `Bienvenido, ${username}!`;
-                loginMessage.style.color = 'green';
-            } else {
-                loginMessage.textContent = 'Usuario o contraseña incorrectos';
-                loginMessage.style.color = 'red';
-            }
+        // Función para agregar un nuevo usuario
+addUserBtn.onclick = function() {
+    const username = prompt('Introduce el nombre de usuario:');
+    const password = prompt('Introduce la contraseña:');
+    const role = prompt('Introduce el rol (admin o user):');
+
+    if (!username || !password || !role) {
+        adminMessage.textContent = 'Todos los campos son obligatorios';
+        adminMessage.style.color = 'red';
+        return;
+    }
+
+    const userExists = users.some(user => user.username === username);
+    if (userExists) {
+        adminMessage.textContent = 'El nombre de usuario ya existe';
+        adminMessage.style.color = 'red';
+    } else {
+        // Asignar un _id único si no lo tienes (aquí simulado con el índice)
+        const newUser = { 
+            _id: `user-${Date.now()}`,  // Genera un ID único con el timestamp
+            username, 
+            password, 
+            role 
+        };
+        users.push(newUser);  // Agregar el nuevo usuario a la lista
+        adminMessage.textContent = `Usuario ${username} agregado exitosamente!`;
+        adminMessage.style.color = 'green';
+        renderUserTable();
+    }
+};
+
+        // Función para mostrar la lista de usuarios en la tabla
+        function renderUserTable() {
+            userTableBody.innerHTML = '';
+            users.forEach((user, index) => {
+                const row = document.createElement('tr');
+
+                row.innerHTML = `
+                    <td>${user.username}</td>
+                    <td>${user.role}</td>
+                    <td>
+                        <button onclick="editUser(${index})">Editar</button>
+                        <button onclick="deleteUser(${index})">Eliminar</button>
+                    </td>
+                `;
+                userTableBody.appendChild(row);
+            });
         }
 
-        // Función para manejar el registro
-        function register(username, password) {
-            // Verificar si el usuario ya existe
-            const userExists = users.some(user => user.username === username);
+        // Función para eliminar un usuario
+async function deleteUser(index) {
+    const user = users[index]; // Obtener el usuario desde la lista
 
-            if (userExists) {
-                registerMessage.textContent = 'El nombre de usuario ya existe';
-                registerMessage.style.color = 'red';
+    const confirmDelete = confirm(`¿Estás seguro de que quieres eliminar al usuario "${user.username}"?`);
+
+    if (confirmDelete) {
+        try {
+            const token = localStorage.getItem('token');  // Obtener el token almacenado
+            const response = await fetch(`http://localhost:3000/users/${user._id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`  // Enviar el token en los encabezados
+                }
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                users.splice(index, 1); // Eliminar el usuario localmente de la lista
+                renderUserTable(); // Actualizar la tabla de usuarios
+                adminMessage.textContent = 'Usuario eliminado correctamente';
+                adminMessage.style.color = 'green';
             } else {
-                // Agregar el nuevo usuario a la "base de datos"
-                users.push({ username, password });
-                registerMessage.textContent = `Usuario ${username} registrado exitosamente!`;
-                registerMessage.style.color = 'green';
+                adminMessage.textContent = result.message;
+                adminMessage.style.color = 'red';
             }
+        } catch (error) {
+            adminMessage.textContent = 'Error al eliminar el usuario: ' + error.message;
+            adminMessage.style.color = 'red';
+        }
+    }
+}
+
+        // Función para editar un usuario
+async function editUser(index) {
+    const user = users[index]; // Obtener el usuario desde la lista
+    const newUsername = prompt('Nuevo nombre de usuario:', user.username);
+    const newPassword = prompt('Nueva contraseña:', user.password);
+    const newRole = prompt('Nuevo rol (user/admin):', user.role);
+
+    if (newUsername && newPassword && (newRole === 'user' || newRole === 'admin')) {
+        // Crear el objeto de datos para actualizar
+        const updatedUserData = {
+            username: newUsername,
+            password: newPassword,
+            role: newRole
+        };
+
+        try {
+            const token = localStorage.getItem('token');  // Obtener el token almacenado
+            const response = await fetch(`http://localhost:3000/users/${user._id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`  // Enviar el token en los encabezados
+                },
+                body: JSON.stringify(updatedUserData)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                users[index] = result.user; // Actualizar el usuario localmente con los nuevos datos
+                renderUserTable(); // Actualizar la tabla de usuarios
+                adminMessage.textContent = 'Usuario editado correctamente';
+                adminMessage.style.color = 'green';
+            } else {
+                adminMessage.textContent = result.message;
+                adminMessage.style.color = 'red';
+            }
+        } catch (error) {
+            adminMessage.textContent = 'Error al actualizar el usuario: ' + error.message;
+            adminMessage.style.color = 'red';
+        }
+    } else {
+        adminMessage.textContent = 'Edición cancelada o datos inválidos';
+        adminMessage.style.color = 'red';
+    }
+}
+
+        // Función para mostrar el panel de administración
+        function showAdminPanel() {
+            loginContainer.classList.remove('active');
+            adminContainer.classList.add('active');
+            fetchUsers();  // Cargar la lista de usuarios al mostrar el panel de admin
+        }
+
+        // Función para mostrar el panel de usuario
+        function showUserPanel(username) {
+            loginContainer.classList.remove('active');
+            // Implementar la lógica para mostrar el panel de usuario aquí
+            alert('Bienvenido, ' + username);
         }
 
         // Manejar el evento de submit del formulario de login
         loginForm.onsubmit = function(event) {
-            event.preventDefault(); // Prevenir el envío del formulario
-
+            event.preventDefault();
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-
             login(username, password);
-
-            // Limpiar los campos del formulario
             loginForm.reset();
-        }
+        };
 
         // Manejar el evento de submit del formulario de registro
         registerForm.onsubmit = function(event) {
-            event.preventDefault(); // Prevenir el envío del formulario
-
+            event.preventDefault();
             const username = document.getElementById('newUsername').value;
             const password = document.getElementById('newPassword').value;
-
             register(username, password);
-
-            // Limpiar los campos del formulario
             registerForm.reset();
-        }
+        };
 
         // Mostrar el formulario de registro
         showRegister.onclick = function() {
             loginContainer.classList.remove('active');
             registerContainer.classList.add('active');
-        }
+        };
 
         // Mostrar el formulario de login
         showLogin.onclick = function() {
             registerContainer.classList.remove('active');
             loginContainer.classList.add('active');
+        };
+
+        // Funciones de registro e inicio de sesión
+        async function register(username, password) {
+            const response = await fetch('http://localhost:3000/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password, role: 'user' })
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                registerMessage.textContent = result.message;
+                registerMessage.style.color = 'green';
+                setTimeout(() => {
+                    registerContainer.classList.remove('active');
+                    loginContainer.classList.add('active');
+                }, 1000);
+            } else {
+                registerMessage.textContent = result.message;
+                registerMessage.style.color = 'red';
+            }
+        }
+
+        async function login(username, password) {
+            const response = await fetch('http://localhost:3000/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                loginMessage.textContent = result.message;
+                loginMessage.style.color = 'green';
+                localStorage.setItem('token', result.token); // Almacenar el token en localStorage
+                if (result.role === 'admin') {
+                    showAdminPanel();
+                } else {
+                    showUserPanel(username);
+                }
+            } else {
+                loginMessage.textContent = result.message;
+                loginMessage.style.color = 'red';
+            }
+        }
+
+        // Función para obtener la lista de usuarios que se registren desde el servidor
+        async function fetchUsers() {
+            const token = localStorage.getItem('token');  // Obtener el token almacenado
+            const response = await fetch('http://localhost:3000/users', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`  // Enviar el token en los encabezados
+                }
+            });
+
+            if (response.ok) {
+                users = await response.json();
+                renderUserTable();
+            } else {
+                adminMessage.textContent = 'No se pudo obtener la lista de usuarios';
+                adminMessage.style.color = 'red';
+            }
         }
     </script>
 </body>
