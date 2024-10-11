@@ -8,31 +8,33 @@ body {
     margin: 0;
 }
 
-.login-container, .register-container {
+.login-container, .register-container, .admin-container, .user-container {
     background-color: #ffffff;
     padding: 20px;
     border-radius: 10px;
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
     width: 300px;
+    max-width: 800px;
     text-align: center;
     display: none;
 }
 
-.login-container.active, .register-container.active {
+/* Para hacer que el admin-container se muestre centrado cuando esté activo */
+.admin-container.active {
+    display: block;
+    width: 800px; /* Ajusta el ancho según el contenido del admin-panel */
+    max-width: 90vw; /* Para asegurar que no se salga del viewport en pantallas pequeñas */
+    margin: 0 auto; /* Centra el contenedor horizontalmente */
+}
+
+.login-container.active, .register-container.active, .admin-container.active, .user-container.active {
     display: block;
 }
 
-.login-container h1, .register-container h1 {
+.login-container h1, .register-container h1, .admin-container h1, .user-container h1 {
     margin-bottom: 20px;
     font-size: 24px;
     color: #333333;
-}
-
-.login-container label, .register-container label {
-    display: block;
-    text-align: left;
-    margin-bottom: 5px;
-    color: #666666;
 }
 
 .login-container input[type="text"],
@@ -47,7 +49,7 @@ body {
     font-size: 16px;
 }
 
-.login-container button, .register-container button {
+.login-container button, .register-container button,  .user-container button {
     width: 100%;
     padding: 10px;
     background-color: #4CAF50;
@@ -58,14 +60,18 @@ body {
     cursor: pointer;
     transition: background-color 0.3s ease;
 }
-
-.login-container button:hover, .register-container button:hover {
-    background-color: #45a049;
+.admin-container button{
+    position: relative;  /* Para que el botón se posicione relativo a este contenedor */
+    width: 70px;
+    height: 40px;
+    cursor: pointer;
+    background-color: lightblue;
+    color: darkcyan;
+    border-radius: 2px;
 }
 
-.login-container .login-message, .register-container .register-message {
-    margin-top: 15px;
-    font-size: 14px;
+.login-container button:hover, .register-container button:hover, .admin-container button:hover, .user-container button:hover {
+    background-color: #45a049;
 }
 
 .login-container .register-link {
@@ -80,4 +86,75 @@ body {
     cursor: pointer;
     color: #007bff;
     text-decoration: underline;
+}
+
+.admin-container {
+    width: 100%;
+    height: auto;
+}
+
+.admin-container .admin-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center; /* Centra los botones horizontalmente */
+    justify-content: center; /* Centra los botones verticalmente */
+}
+
+.admin-container .admin-actions button {
+    padding: 10px;
+    background-color: #007bff;
+    width: 200px; /* Define un ancho para que todos los botones tengan el mismo tamaño */
+    text-align: center; /* Asegura que el texto del botón esté centrado */
+}
+.button-container {
+    position: relative;  /* Para que el botón se posicione relativo a este contenedor */
+    width: 70px;
+    height: 40px;
+    cursor: pointer;
+    background-color: lightblue;
+    color: darkcyan;
+    border-radius: 2px;
+}
+
+/* Estilo para centrar la tabla */
+.table-container {
+    display: flex;
+    justify-content: center;
+    margin: 20px auto;
+}
+
+#userTable {
+    width: 90%;
+    max-width: 900px;
+    border-collapse: collapse;
+    background-color: #ffffff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+}
+
+#userTable th, #userTable td {
+    min-height: 40px; /* Asegura que cada fila tenga una altura mínima */
+    padding: 15px;
+    text-align: center;
+    border: 1px solid #dddddd;
+}
+
+#userTable th {
+    background-color: #f4f4f4;
+    font-weight: bold;
+}
+
+#userTable button {
+    padding: 5px 10px;
+    border: none;
+    border-radius: 3px;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#userTable button:hover {
+    background-color: #0056b3;
 }
