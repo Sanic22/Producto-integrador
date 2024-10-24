@@ -3,325 +3,151 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Login</title>
-    <link rel="stylesheet" href="./index.css">
+    <title>Inicio de Sesión</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        html, body {
+            height: 100%; /* Asegurar que el HTML y el body ocupen toda la altura */
+            margin: 0; /* Eliminar márgenes por defecto */ 
+        }
+        body {
+            display: flex;
+            justify-content: center; /* Centrar horizontalmente */
+            align-items: center; /* Centrar verticalmente */
+            background-color: #f8f9fa; /* Color de fondo suave */
+        }
+        #formulario {
+            background-color: #d1e7fd; /* Color celeste */
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 300px; /* Ancho del formulario */
+        }
+    </style>
+    <script>
+        // Simulación de un usuario registrado
+        let usuarios = JSON.parse(localStorage.getItem("usuarios")) || [
+            { username: "admin", password: "admin123", rol: "admin" },
+            { username: "user", password: "user123", rol: "user" }
+        ];
+
+     // Función para guardar los usuarios en localStorage
+     function guardarUsuarios() {
+     localStorage.setItem("usuarios", JSON.stringify(usuarios));
+     }
+
+        async function iniciarSesion() {
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+
+            // Enviar la solicitud al servidor para iniciar sesión
+    const response = await fetch('http://localhost:4000/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username, password })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+        alert('Inicio de sesión exitoso');
+
+        // Guardar el usuario actual en localStorage (puedes modificar esto según lo necesites)
+        localStorage.setItem("usuarioActual", JSON.stringify(data));
+
+        // Redirigir según el rol
+        if (data.rol === "admin") {
+            window.location.href = "admin.html";  // Redirigir a la página de admin
+        } else {
+            window.location.href = "user.html";   // Redirigir a la página de usuario
+        }
+    } else {
+        alert(data.message || 'Error al iniciar sesión');
+    }
+}
+
+        async function registrarUsuario() {
+            const username = document.getElementById("reg_username").value;
+            const password = document.getElementById("reg_password").value;
+            const rol = document.getElementById("rol").value;
+
+            // Verificar si la contraseña cumple con los requisitos
+        const passwordRegex = /^[A-Za-z0-9]{6,20}$/;
+        if (!passwordRegex.test(password)) {
+        alert("La contraseña solo puede contener letras y números, con un máximo de 6 caracteres.");
+        return; // Salir si la contraseña no es válida
+        }
+
+            // Enviar la solicitud al servidor para registrar al usuario
+    const response = await fetch('http://localhost:4000/registro', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username, password, rol })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+        alert("Registro exitoso. Ahora puede iniciar sesión.");
+        mostrarLogin(); // Volver al formulario de inicio de sesión
+    } else {
+        alert(data.message); // Mostrar el error enviado por el servidor
+    }
+  }
+
+        function manejarFormulario() {
+            const rolSeleccionado = document.querySelector('input[name="rol"]:checked');
+            if (rolSeleccionado) {
+                if (rolSeleccionado.value === 'login') {
+                    iniciarSesion();
+                } else {
+                    registrarUsuario();
+                }
+            } else {
+                alert("Por favor, seleccione una opción (Iniciar sesión o Registrarse).");
+            }
+        }
+
+        function mostrarRegistro() {
+            document.getElementById("formulario").innerHTML = `
+                <h1 class="text-center">Registro</h1>
+                <input type="text" class="form-control mb-3" id="reg_username" placeholder="Nombre de usuario" required>
+                <input type="password" class="form-control mb-3" id="reg_password" placeholder="Contraseña" required>
+                <select class="form-control mb-3" id="rol" required>
+                    <option value="" disabled selected>Seleccionar rol</option>
+                    <option value="admin">Administrador</option>
+                    <option value="user">Usuario</option>
+                </select>
+                <button class="btn btn-success btn-block" onclick="registrarUsuario()">Registrarse</button>
+                <p class="mt-3">¿Ya tienes una cuenta? <a href="#" onclick="mostrarLogin()">Iniciar sesión</a></p>
+            `;
+        }
+
+        function mostrarLogin() {
+            document.getElementById("formulario").innerHTML = `
+                <h1 class="text-center">Inicio de Sesión</h1>
+                <input type="text" class="form-control mb-3" id="username" placeholder="Nombre de usuario" required>
+                <input type="password" class="form-control mb-3" id="password" placeholder="Contraseña" required>
+                <button class="btn btn-primary btn-block" onclick="iniciarSesion()">Iniciar Sesión</button>
+                <p class="mt-3">¿No tienes una cuenta? <a href="#" onclick="mostrarRegistro()">Registrarse</a></p>
+            `;
+        }
+
+        // Mostrar el formulario de inicio de sesión al cargar
+        window.onload = mostrarLogin;
+    </script>
 </head>
 <body>
-    <!-- Formulario de Login -->
-    <div class="login-container active" id="loginContainer">
-        <h1>Iniciar Sesión</h1>
-    
-        <form id="loginForm">
-            <label for="username">Usuario:</label>
-            <input type="text" id="username" name="username" placeholder="Introduce tu usuario" required autocomplete="username">
-    
-            <label for="password">Contraseña:</label>
-            <input type="password" id="password" name="password" placeholder="Introduce tu contraseña" required autocomplete="current-password">
-    
-            <button type="submit">Iniciar Sesión</button>
-        </form>
-    
-        <div id="loginMessage" class="login-message"></div>
-        <div class="register-link" id="showRegister">¿No tienes cuenta? Regístrate aquí</div>
-    </div>
+    <div id="formulario"></div>
 
-    <!-- Formulario de Registro -->
-    <div class="register-container" id="registerContainer">
-        <h1>Registro</h1>
-    
-        <form id="registerForm">
-            <label for="newUsername">Usuario:</label>
-            <input type="text" id="newUsername" name="username" placeholder="Elige tu usuario" required autocomplete="new-username">
-    
-            <label for="newPassword">Contraseña:</label>
-            <input type="password" id="newPassword" name="password" placeholder="Elige tu contraseña" required autocomplete="new-password">
-    
-            <button type="submit">Registrarse</button>
-        </form>
-    
-        <div id="registerMessage" class="register-message"></div>
-        <div class="login-link" id="showLogin">¿Ya tienes cuenta? Inicia sesión aquí</div>
-    </div>
-
-    <!-- Panel de Administración -->
-    <div class="admin-container" id="adminContainer">
-        <h1>Panel de Administración</h1>
-        <h2>Lista de Usuarios</h2>
-        <div class="button-container">
-            <button id="addUserBtn" class="add-user-btn">Agregar Usuario</button>
-        </div>
-        <table id="userTable">
-            <thead>
-                <tr>
-                    <th>Usuario</th>
-                    <th>Rol</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Los usuarios se mostrarán aquí dinámicamente -->
-            </tbody>
-        </table>    
-        <div id="adminMessage" class="admin-message"></div>
-    </div>
-
-    <script>
-        let users = []; // Definir la lista de usuarios
-
-        // Referencias a los elementos del DOM
-        const loginForm = document.getElementById('loginForm');
-        const registerForm = document.getElementById('registerForm');
-        const loginMessage = document.getElementById('loginMessage');
-        const registerMessage = document.getElementById('registerMessage');
-        const loginContainer = document.getElementById('loginContainer');
-        const registerContainer = document.getElementById('registerContainer');
-        const adminContainer = document.getElementById('adminContainer');
-        const adminMessage = document.getElementById('adminMessage');
-        const userTableBody = document.querySelector('#userTable tbody');
-        const showRegister = document.getElementById('showRegister');
-        const showLogin = document.getElementById('showLogin');
-
-        // Función para agregar un nuevo usuario
-addUserBtn.onclick = function() {
-    const username = prompt('Introduce el nombre de usuario:');
-    const password = prompt('Introduce la contraseña:');
-    const role = prompt('Introduce el rol (admin o user):');
-
-    if (!username || !password || !role) {
-        adminMessage.textContent = 'Todos los campos son obligatorios';
-        adminMessage.style.color = 'red';
-        return;
-    }
-
-    const userExists = users.some(user => user.username === username);
-    if (userExists) {
-        adminMessage.textContent = 'El nombre de usuario ya existe';
-        adminMessage.style.color = 'red';
-    } else {
-        // Asignar un _id único si no lo tienes (aquí simulado con el índice)
-        const newUser = { 
-            _id: `user-${Date.now()}`,  // Genera un ID único con el timestamp
-            username, 
-            password, 
-            role 
-        };
-        users.push(newUser);  // Agregar el nuevo usuario a la lista
-        adminMessage.textContent = `Usuario ${username} agregado exitosamente!`;
-        adminMessage.style.color = 'green';
-        renderUserTable();
-    }
-};
-
-        // Función para mostrar la lista de usuarios en la tabla
-        function renderUserTable() {
-            userTableBody.innerHTML = '';
-            users.forEach((user, index) => {
-                const row = document.createElement('tr');
-
-                row.innerHTML = `
-                    <td>${user.username}</td>
-                    <td>${user.role}</td>
-                    <td>
-                        <button onclick="editUser(${index})">Editar</button>
-                        <button onclick="deleteUser(${index})">Eliminar</button>
-                    </td>
-                `;
-                userTableBody.appendChild(row);
-            });
-        }
-
-        // Función para eliminar un usuario
-async function deleteUser(index) {
-    const user = users[index]; // Obtener el usuario desde la lista
-
-    const confirmDelete = confirm(`¿Estás seguro de que quieres eliminar al usuario "${user.username}"?`);
-
-    if (confirmDelete) {
-        try {
-            const token = localStorage.getItem('token');  // Obtener el token almacenado
-            const response = await fetch(`http://localhost:3000/users/${user._id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`  // Enviar el token en los encabezados
-                }
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                users.splice(index, 1); // Eliminar el usuario localmente de la lista
-                renderUserTable(); // Actualizar la tabla de usuarios
-                adminMessage.textContent = 'Usuario eliminado correctamente';
-                adminMessage.style.color = 'green';
-            } else {
-                adminMessage.textContent = result.message;
-                adminMessage.style.color = 'red';
-            }
-        } catch (error) {
-            adminMessage.textContent = 'Error al eliminar el usuario: ' + error.message;
-            adminMessage.style.color = 'red';
-        }
-    }
-}
-
-        // Función para editar un usuario
-async function editUser(index) {
-    const user = users[index]; // Obtener el usuario desde la lista
-    const newUsername = prompt('Nuevo nombre de usuario:', user.username);
-    const newPassword = prompt('Nueva contraseña:', user.password);
-    const newRole = prompt('Nuevo rol (user/admin):', user.role);
-
-    if (newUsername && newPassword && (newRole === 'user' || newRole === 'admin')) {
-        // Crear el objeto de datos para actualizar
-        const updatedUserData = {
-            username: newUsername,
-            password: newPassword,
-            role: newRole
-        };
-
-        try {
-            const token = localStorage.getItem('token');  // Obtener el token almacenado
-            const response = await fetch(`http://localhost:3000/users/${user._id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`  // Enviar el token en los encabezados
-                },
-                body: JSON.stringify(updatedUserData)
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                users[index] = result.user; // Actualizar el usuario localmente con los nuevos datos
-                renderUserTable(); // Actualizar la tabla de usuarios
-                adminMessage.textContent = 'Usuario editado correctamente';
-                adminMessage.style.color = 'green';
-            } else {
-                adminMessage.textContent = result.message;
-                adminMessage.style.color = 'red';
-            }
-        } catch (error) {
-            adminMessage.textContent = 'Error al actualizar el usuario: ' + error.message;
-            adminMessage.style.color = 'red';
-        }
-    } else {
-        adminMessage.textContent = 'Edición cancelada o datos inválidos';
-        adminMessage.style.color = 'red';
-    }
-}
-
-        // Función para mostrar el panel de administración
-        function showAdminPanel() {
-            loginContainer.classList.remove('active');
-            adminContainer.classList.add('active');
-            fetchUsers();  // Cargar la lista de usuarios al mostrar el panel de admin
-        }
-
-        // Función para mostrar el panel de usuario
-        function showUserPanel(username) {
-            loginContainer.classList.remove('active');
-            // Implementar la lógica para mostrar el panel de usuario aquí
-            alert('Bienvenido, ' + username);
-        }
-
-        // Manejar el evento de submit del formulario de login
-        loginForm.onsubmit = function(event) {
-            event.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            login(username, password);
-            loginForm.reset();
-        };
-
-        // Manejar el evento de submit del formulario de registro
-        registerForm.onsubmit = function(event) {
-            event.preventDefault();
-            const username = document.getElementById('newUsername').value;
-            const password = document.getElementById('newPassword').value;
-            register(username, password);
-            registerForm.reset();
-        };
-
-        // Mostrar el formulario de registro
-        showRegister.onclick = function() {
-            loginContainer.classList.remove('active');
-            registerContainer.classList.add('active');
-        };
-
-        // Mostrar el formulario de login
-        showLogin.onclick = function() {
-            registerContainer.classList.remove('active');
-            loginContainer.classList.add('active');
-        };
-
-        // Funciones de registro e inicio de sesión
-        async function register(username, password) {
-            const response = await fetch('http://localhost:3000/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ username, password, role: 'user' })
-            });
-
-            const result = await response.json();
-            if (response.ok) {
-                registerMessage.textContent = result.message;
-                registerMessage.style.color = 'green';
-                setTimeout(() => {
-                    registerContainer.classList.remove('active');
-                    loginContainer.classList.add('active');
-                }, 1000);
-            } else {
-                registerMessage.textContent = result.message;
-                registerMessage.style.color = 'red';
-            }
-        }
-
-        async function login(username, password) {
-            const response = await fetch('http://localhost:3000/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ username, password })
-            });
-
-            const result = await response.json();
-            if (response.ok) {
-                loginMessage.textContent = result.message;
-                loginMessage.style.color = 'green';
-                localStorage.setItem('token', result.token); // Almacenar el token en localStorage
-                if (result.role === 'admin') {
-                    showAdminPanel();
-                } else {
-                    showUserPanel(username);
-                }
-            } else {
-                loginMessage.textContent = result.message;
-                loginMessage.style.color = 'red';
-            }
-        }
-
-        // Función para obtener la lista de usuarios que se registren desde el servidor
-        async function fetchUsers() {
-            const token = localStorage.getItem('token');  // Obtener el token almacenado
-            const response = await fetch('http://localhost:3000/users', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`  // Enviar el token en los encabezados
-                }
-            });
-
-            if (response.ok) {
-                users = await response.json();
-                renderUserTable();
-            } else {
-                adminMessage.textContent = 'No se pudo obtener la lista de usuarios';
-                adminMessage.style.color = 'red';
-            }
-        }
-    </script>
+    <!-- Bootstrap JS y dependencias (opcional) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>
