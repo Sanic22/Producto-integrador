@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administrador</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            display: flex;
+        }
+        .sidebar {
+            min-height: 100vh;
+            width: 250px;
+            background-color: #343a40;
+            color: white;
+            position: fixed;
+        }
+        .sidebar a {
+            color: white;
+            padding: 15px;
+            text-decoration: none;
+            display: block;
+        }
+        .sidebar a:hover {
+            background-color: #495057;
+        }
+        .content {
+            margin-left: 250px;
+            padding: 20px;
+            flex-grow: 1;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            max-width: 300px; /* Limitar el tamaño máximo del gráfico */
+            max-height: 300px; /* Limitar el tamaño máximo del gráfico */
+        }
+        #chart-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%; /* Para centrar el gráfico verticalmente */
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2 class="text-center">Administrador</h2>
+        <a href="#" onclick="inicioAdmin()">Home</a>
+        <a href="#" onclick="mostrarDashboard()">Dashboard</a>
+        <a href="#" onclick="mostrarUsuarios()">Usuarios</a>
+        <a href="#" onclick="salir()">Log out</a>
+    </div>
+
+    <div class="content">
+        <div id="seccion">
+    <!-- Aquí aparecerán los reportes de incidencias -->
+        </div>
+    </div>
+
+    <script>
+        // Simulación de usuarios registrados
+        let usuarios = [
+            { id: 1, username: "admin", rol: "admin" },
+            { id: 2, username: "usuario1", rol: "user" },
+        ];
+
+        // Función para obtener los usuarios guardados en localStorage
+    function obtenerUsuarios() {
+        return JSON.parse(localStorage.getItem("usuarios")) || [];
+    }
+
+        // Función para mostrar usuarios
+        async function mostrarUsuarios() {
+        try {
+            const response = await fetch('http://localhost:4000/usuarios');  // Obtener usuarios desde el servidor
+            const usuariosGuardados = await response.json();
+            let usuariosHTML = `
+                <h2>Usuarios Registrados</h2>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Nombre de Usuario</th>
+                            <th>Rol</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            usuariosGuardados.forEach((usuario, index) => {
+                usuariosHTML += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${usuario.username}</td>
+                        <td>${usuario.rol}</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm" onclick="editarUsuario(${usuario.id})">Editar</button>
+                            <button class="btn btn-danger btn-sm" onclick="eliminarUsuario(${usuario.id})">Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            usuariosHTML += `
+                    </tbody>
+                </table>
+            `;
+
+            document.getElementById("seccion").innerHTML = usuariosHTML;
+        } catch (error) {
+        console.error('Error al obtener usuarios:', error);
+    }
+        }
+
+        // Función para eliminar un usuario
+        async function eliminarUsuario(id) {
+    try {
+        const response = await fetch(`http://localhost:4000/usuarios/${id}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            alert("Usuario eliminado exitosamente.");
+            mostrarUsuarios();  // Actualizar la tabla después de eliminar
+        } else {
+            alert("Error al eliminar el usuario.");
+        }
+    } catch (error) {
+        console.error('Error al eliminar usuario:', error);
+    }
+}
+
+        // Función para editar un usuario
+        async function editarUsuario(id) {
+    let nuevoUsername = prompt("Editar nombre de usuario:");
+    let nuevoRol = prompt("Editar rol (admin/user):");
+
+    if (nuevoUsername && nuevoRol) {
+        try {
+            const response = await fetch(`http://localhost:4000/usuarios/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username: nuevoUsername, rol: nuevoRol })
+            });
+
+            if (response.ok) {
+                alert("Usuario editado exitosamente.");
+                mostrarUsuarios();  // Actualizar la tabla después de editar
+            } else {
+                alert("Error al editar el usuario.");
+            }
+        } catch (error) {
+            console.error('Error al editar usuario:', error);
+        }
+    } else {
+        alert("Debe ingresar un nombre de usuario y un rol válidos.");
+    }
+}
+
+        // Función para mostrar el dashboard con gráfico circular (pie chart)
+        async function mostrarDashboard() {
+            document.getElementById("seccion").innerHTML = `
+         <div class="row">
+            <div class="col-md-6">
+                <h3>Usuarios por Rol</h3>
+                <canvas id="usuariosChart" width="300" height="300"></canvas>
+            </div>
+            <div class="col-md-6">
+                <h3>Incidencias Realizadas</h3>
+                <canvas id="incidenciasChart" width="300" height="300"></canvas>
+            </div>
+         </div>
+         <div class="col-12">
+                <h3>Incidencias Pendientes</h3>
+                <canvas id="incidenciasPendientes" width="300" height="300"></canvas>
+            </div>
+         </div>
+         `;
+
+            const ctx = document.getElementById('usuariosChart').getContext('2d');
+            const ctxIncidencias = document.getElementById('incidenciasChart').getContext('2d');
+            const ctxPendientes = document.getElementById('incidenciasPendientes').getContext('2d');
+
+            // Crear un gradiente lineal para el borde del gráfico
+            let gradient = ctx.createLinearGradient(0, 0, 300, 300);
+            gradient.addColorStop(0, 'blue');
+            gradient.addColorStop(0.33, 'skyblue');
+            gradient.addColorStop(0.66, 'green');
+            gradient.addColorStop(1, 'pink');
+
+            // === Obtener usuarios desde el servidor ===
+    try {
+        const responseUsuarios = await fetch('http://localhost:4000/usuarios');
+        const usuarios = await responseUsuarios.json();
+
+        // Contar el número de usuarios por rol
+        const roles = usuarios.reduce((acc, usuario) => {
+            acc[usuario.rol] = (acc[usuario.rol] || 0) + 1;
+            return acc;
+        }, {});
+
+        // Crear el gráfico de usuarios por rol
+        const chartUsuarios = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(roles),
+                datasets: [{
+                    label: 'Usuarios por Rol',
+                    data: Object.values(roles),
+                    backgroundColor: ['#007bff', '#28a745'],
+                    borderColor: '#fff',
+                    borderWidth: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+    } catch (error) {
+        console.error('Error al obtener usuarios:', error);
+    }
+
+    // === Obtener incidencias desde el servidor ===
+    try {
+        const responseIncidencias = await fetch('http://localhost:4000/incidencias');
+        const reportes = await responseIncidencias.json();
+
+        // Filtrar incidencias realizadas
+        const reportesRealizados = reportes.filter(reporte => reporte.estado === 'Realizado');
+
+        // Contar el número de incidencias realizadas por tipo
+        const incidenciasPorTipo = reportesRealizados.reduce((acc, reporte) => {
+            acc[reporte.tipo] = (acc[reporte.tipo] || 0) + 1;
+            return acc;
+        }, {});
+
+        // Crear el gráfico de incidencias realizadas
+        const incidenciasChart = new Chart(ctxIncidencias, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(incidenciasPorTipo),
+                datasets: [{
+                    label: 'Incidencias por Tipo',
+                    data: Object.values(incidenciasPorTipo),
+                    backgroundColor: ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0'],
+                    borderColor: '#fff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+
+        // Filtrar incidencias pendientes
+        const reportesPendientes = reportes.filter(reporte => reporte.estado === 'Pendiente');
+
+        // Contar el número de incidencias pendientes por tipo
+        const incidenciasPendientesPorTipo = reportesPendientes.reduce((acc, reporte) => {
+            acc[reporte.tipo] = (acc[reporte.tipo] || 0) + 1;
+            return acc;
+        }, {});
+
+        // Crear el gráfico de incidencias pendientes
+        const incidenciasPendientesChart = new Chart(ctxPendientes, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(incidenciasPendientesPorTipo),
+                datasets: [{
+                    data: Object.values(incidenciasPendientesPorTipo),
+                    backgroundColor: ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff'],
+                    hoverBackgroundColor: ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                title: {
+                    display: true,
+                    text: 'Tipos de Incidencias Pendientes'
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    }
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error('Error al obtener incidencias:', error);
+    }
+}
+
+// Función para cargar y mostrar reportes de incidencias al iniciar admin.html
+async function cargarReportes() {
+    try{
+    // Obtener los reportes de incidencias desde el servidor
+    const response = await fetch('http://localhost:4000/incidencias');
+        const reportesGuardados = await response.json();
+    
+    // Filtrar los reportes que NO estén marcados como "Realizado"
+    let reportesPendientes = reportesGuardados.filter(reporte => reporte.estado !== "Realizado");
+
+    // Crear la tabla de reportes
+    let reportesHTML = `
+    <h2>Reportes de Incidencias</h2>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Ubicación</th>
+                <th>Tipo de Incidencia</th>
+                <th>Descripción</th>
+                <th>Impacto</th>
+                <th>Estado</th>
+                <th>Acción</th> <!-- Columna para la acción de cambiar el estado -->
+            </tr>
+        </thead>
+        <tbody>
+    `;
+
+    // Crear las filas de la tabla con los reportes pendientes
+    reportesPendientes.forEach((reporte, index) => {
+        // Encontrar el índice original del reporte en reportesGuardados
+        
+        reportesHTML += `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${reporte.ubicacion}</td>
+                <td>${reporte.tipo}</td>
+                <td>${reporte.descripcion}</td>
+                <td>${reporte.impacto}</td>
+                <td>${reporte.estado}</td>
+                <td><button class="btn btn-success btn-sm" onclick="marcarRealizado(${reporte._id})">Marcar realizado</button></td>
+            </tr>
+        `;
+    });
+
+    // Cerrar el tbody y la tabla
+    reportesHTML += `
+        </tbody>
+        </table>
+    `;
+
+    // Asignar el HTML generado al contenedor adecuado
+    document.getElementById("seccion").innerHTML = reportesHTML;
+} catch (error) {
+        console.error('Error al cargar los reportes:', error);
+    }
+}
+
+// Función para marcar un reporte realizado y actualizar la tabla
+async function marcarRealizado(id) {
+    try {
+        // Enviar una solicitud al servidor para actualizar el estado del reporte
+        const response = await fetch(`http://localhost:4000/incidencias/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ estado: "Realizado" })
+        });
+
+        if (response.ok) {
+            alert("Reporte marcado como realizado.");
+            cargarReportes();  // Recargar la lista de reportes
+        } else {
+            alert("Error al marcar el reporte como realizado.");
+        }
+    } catch (error) {
+        console.error('Error al marcar el reporte como realizado:', error);
+    }
+}
+
+    // Llamar a cargarReportes cuando se cargue la página
+    window.onload = cargarReportes;
+
+    //Regresar a home o inicio de la pagina principal de admin
+    function inicioAdmin(){
+        window.location.href = "admin.html";
+    }
+
+    //funcion para el log out
+    function salir(){
+    window.location.href = "index.html";
+    }
+
+    </script>
+    <!-- Bootstrap JS y dependencias (opcional) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
