@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página de Usuario</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #f8f9fa;
+        }
+
+        .sidebar {
+            min-height: 100vh;
+            width: 250px; /* Ancho del sidebar */
+            background-color: #343a40;
+            color: white;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+
+        .sidebar a {
+            color: white;
+            padding: 15px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .sidebar a:hover {
+            background-color: #495057;
+        }
+
+        .titulo-menu {
+            margin-left: 250px; /* Espacio para que comience donde termina el sidebar */
+            width: calc(100% - 250px); /* Hace que el ancho sea el 100% menos el ancho del sidebar */
+            text-align: center;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-below {
+            margin-left: 250px; /* Para alinear con el sidebar */
+            width: calc(100% - 250px); /* Para que tome todo el ancho menos el sidebar */
+            background-color: #e9ecef; /* Color de fondo opcional */
+            padding: 20px;
+            margin-top: 3px; /* Espacio entre el título y este nuevo div */
+            border-radius: 10px;
+            height:450px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2 class="text-center">Usuario</h2>
+        <a href="#" onclick="inicioUser()">Home</a>
+        <a href="#" onclick="mostrarReporte()">Reportes</a>
+        <a href="#" onclick="mostrarCuenta()">Cuenta</a>
+        <a href="#" onclick="Salir()">Log out</a>
+    </div>
+
+    <div class="titulo-menu">
+        <h1>Página de Usuario</h1>
+        <p id="Bienvenido">Bienvenido, usuario. Aquí puedes ver tu información.</p>
+    </div>
+
+    <!-- Nuevo div debajo del título y reporte-->
+    <div class="content-below">
+        <h2>Reportar de incidencias</h2>
+        <form id="seccion" onsubmit="enviarReporte(event)">
+            <div class="form-group">
+                <label for="ubicacion">Ubicación:</label>
+                <input type="text" class="form-control" id="ubicacion" placeholder="Ej. Barra de bebidas" required>
+            </div>
+            <div class="form-group">
+                <label for="tipo">Tipo de incidencia:</label>
+                <select class="form-control" id="tipo" required>
+                    <option value="">Seleccione</option>
+                    <option value="fallo equipo">Fallo de equipo</option>
+                    <option value="queja cliente">Queja de cliente</option>
+                    <option value="problema higiene">Problema de higiene</option>
+                    <option value="problema seguridad">Problema de seguridad</option>
+                    <option value="otro">Otro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="descripcion">Descripción de la incidencia:</label>
+                <textarea class="form-control" id="descripcion" rows="4" placeholder="Describe el problema..." required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="impacto">Impacto:</label>
+                <input type="text" class="form-control" id="impacto" placeholder="Ej. 8 clientes afectados" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Enviar Reporte</button>
+        </form>
+    </div>
+    <script>
+    
+    // Obtener el usuario autenticado desde el servidor en lugar de localStorage
+async function verificarAutenticacion() {
+    const response = await fetch('http://localhost:4000/usuarioActual', {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem("token")}`  // Si usas un token JWT
+        }
+    });
+    
+    if (response.ok) {
+        const usuarioActual = await response.json();
+        document.getElementById("Bienvenido").innerText = `Bienvenido, ${usuarioActual.username}. Aquí puedes ver tu información.`;
+    } else {
+        alert("Acceso denegado. Debes iniciar sesión.");
+        window.location.href = "index.html";  // Redirigir al login si no hay usuario
+    }
+}
+
+    // simulacion de incidencias
+    let incidencias = [];
+
+    //funcion para enviar reportes
+    async function enviarReporte(event) {
+    event.preventDefault();
+
+    const ubicacion = document.getElementById("ubicacion").value;
+    const tipo = document.getElementById("tipo").value;
+    const descripcion = document.getElementById("descripcion").value;
+    const impacto = document.getElementById("impacto").value;
+
+    // Obtener el usuario autenticado
+    const responseUsuario = await fetch('http://localhost:4000/usuarioActual', {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem("token")}`  // Si usas un token JWT
+        }
+    });
+
+    if (responseUsuario.ok) {
+        const usuarioActual = await responseUsuario.json();
+
+        // Crear el reporte y enviarlo al servidor
+        const reporte = {
+            usuarioId: usuarioActual._id,  // Usar el ID del usuario autenticado
+            ubicacion: ubicacion,
+            tipo: tipo,
+            descripcion: descripcion,
+            impacto: impacto,
+            estado: "Pendiente"
+        };
+
+        const responseReporte = await fetch('http://localhost:4000/incidencias', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem("token")}`
+            },
+            body: JSON.stringify(reporte)
+        });
+
+        if (responseReporte.ok) {
+            alert("Reporte de incidencia enviado con éxito.");
+            mostrarIncidencias();  // Mostrar la tabla con los reportes de incidencias
+        } else {
+            alert("Error al enviar el reporte de incidencia.");
+        }
+    } else {
+        alert("Error al autenticar al usuario.");
+    }
+}
+
+    //funcion para mostrar los reportes en mostrarIncidencias();
+    async function mostrarIncidencias() {
+    const response = await fetch('http://localhost:4000/incidencias', {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem("token")}`  // Si usas un token JWT
+        }
+    });
+
+    if (response.ok) {
+        const incidencias = await response.json();
+
+        // Crear la tabla de reportes con los datos recibidos del servidor
+        let reportesHTML = `
+            <h2>Reportes de Incidencias</h2>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Ubicación</th>
+                        <th>Tipo de Incidencia</th>
+                        <th>Descripción</th>
+                        <th>Impacto</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        incidencias.forEach((reporte, index) => {
+            reportesHTML += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${reporte.ubicacion}</td>
+                    <td>${reporte.tipo}</td>
+                    <td>${reporte.descripcion}</td>
+                    <td>${reporte.impacto}</td>
+                    <td>${reporte.estado}</td>
+                </tr>
+            `;
+        });
+
+        reportesHTML += `
+                </tbody>
+            </table>
+        `;
+
+        document.getElementById("seccion").innerHTML = reportesHTML;
+    } else {
+        alert("Error al cargar las incidencias.");
+    }
+}
+
+    //mostrar los reportes solo cuando se toca la pertaña reportes
+    function mostrarReporte() {
+    mostrarIncidencias(); // Cargar los reportes del usuario
+    }
+
+     // Función para mostrar usuarios
+     async function mostrarCuenta() {
+    try {
+        // Obtener el usuario autenticado desde localStorage
+        const usuarioActual = JSON.parse(localStorage.getItem("usuarioActual"));
+
+        // Solicitud al servidor para obtener los datos del usuario
+        const response = await fetch(`http://localhost:4000/usuarios/${usuarioActual.id}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('No se pudo obtener la cuenta del usuario.');
+        }
+
+        const usuario = await response.json();
+
+        // Crear el HTML para mostrar la cuenta
+        let usuariosHTML = `
+            <h2>Mi Cuenta</h2>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Nombre de Usuario</th>
+                        <th>Contraseña</th>
+                        <th>Rol</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>${usuario.username}</td>
+                        <td>${usuario.password}</td> <!-- Podrías no mostrar la contraseña por seguridad -->
+                        <td>${usuario.rol}</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm" onclick="editarUsuario(${usuario._id})">Editar</button>
+                            <button class="btn btn-danger btn-sm" onclick="eliminarUsuario(${usuario._id})">Eliminar</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
+
+        document.getElementById("seccion").innerHTML = usuariosHTML;
+
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+        // Función para eliminar un usuario
+        async function eliminarUsuario(id) {
+    if (confirm("¿Estás seguro de que deseas eliminar tu cuenta?")) {
+        try {
+            const response = await fetch(`http://localhost:4000/usuarios/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('No se pudo eliminar la cuenta.');
+            }
+
+            alert('Cuenta eliminada con éxito.');
+
+            // Eliminar el usuario del localStorage y redirigir al login
+            localStorage.removeItem("usuarioActual");
+            window.location.href = "index.html";
+
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+}
+
+        // Función para editar un usuario
+        async function editarUsuario(id) {
+    const nuevoUsername = prompt("Editar nombre de usuario:");
+    const nuevoPassword = prompt("Editar contraseña:");
+    const nuevoRol = prompt("Editar rol (admin/user):");
+
+    if (nuevoUsername && nuevoPassword && nuevoRol) {
+        try {
+            const response = await fetch(`http://localhost:4000/usuarios/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: nuevoUsername,
+                    password: nuevoPassword,
+                    rol: nuevoRol
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('No se pudo actualizar la cuenta.');
+            }
+
+            alert('Cuenta actualizada con éxito.');
+            mostrarCuenta(); // Volver a cargar la cuenta después de actualizar
+
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+}
+
+        //funcion para regresar al menu usuario donde estan los reportes
+        function inicioUser(){
+            window.location.href = "user.html"
+        }
+        //funcion para salir con el log out y mande al login
+        function Salir(){
+            window.location.href = "index.html";
+        }
+
+        // Llamar a la función de verificación al cargar la página
+        window.onload = verificarAutenticacion;
+    </script>
+</body>
+</html>
